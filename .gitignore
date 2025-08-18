@@ -26,7 +26,7 @@ build/
 *.pem
 .env.local
 application-local.yml
-application.yml
+
 
 # 資料庫相關檔案（如有）
 *.db

@@ -1,4 +1,4 @@
-pckage com.solo.portfolio.config;
+package com.solo.portfolio.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -116,7 +116,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         // 允許所有來源
-        configuration.setAllowedOriginPatterns(Arrays.asList("https://solo-react-frontend.vercel.app");
+        configuration.setAllowedOriginPatterns(Arrays.asList("https://solo-react-frontend.vercel.app"));
         // 允許的HTTP方法
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         // 允許所有請求頭

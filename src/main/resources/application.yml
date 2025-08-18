@@ -69,3 +69,6 @@ cors:
 oauth2:
   frontend-success-url: ${OAUTH2_FRONTEND_SUCCESS_URL:http://localhost:5173/login}
   frontend-failure-url: ${OAUTH2_FRONTEND_FAILURE_URL:http://localhost:5173/login}
+
+server:
+port: ${PORT:8080}

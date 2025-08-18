@@ -1,0 +1,50 @@
+# 一般作業系統產生的檔案
+.DS_Store
+Thumbs.db
+
+# 編譯產生的檔案與目錄
+target/
+bin/
+out/
+build/
+
+# IDE 相關檔案
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.suo
+*.swp
+
+# 日誌檔案
+*.log
+
+# 環境變數與密鑰相關檔案
+.env
+*.env
+*.pem
+.env.local
+application-local.yml
+application.yml
+
+# 資料庫相關檔案（如有）
+*.db
+*.sqlite
+
+# 測試報告
+test-output/
+jacoco.exec
+
+# Maven、Gradle 相關檔案
+.mvn/
+.mvnw
+.mvnw.cmd
+.gradle/
+
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# 額外項目 - 根據需求自訂
+/config.js
+

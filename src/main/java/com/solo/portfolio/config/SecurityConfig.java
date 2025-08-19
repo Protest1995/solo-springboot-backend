@@ -44,8 +44,11 @@ public class SecurityConfig {
         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
         // OAuth2
         .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
-        // 公開 GET（統一 /api 前綴）
-        .requestMatchers(HttpMethod.GET, "/api/posts/**", "/api/portfolio/**", "/api/comments/post/**").permitAll()
+        // 公開 GET（統一 /api 前綴，精確與萬用各一條，放前面確保命中）
+        .requestMatchers("/api/posts", "/api/posts/**").permitAll()
+        .requestMatchers("/api/portfolio", "/api/portfolio/**").permitAll()
+        .requestMatchers("/api/comments/post", "/api/comments/post/**").permitAll()
+        // 其他公開端點
         .requestMatchers("/auth/**").permitAll()
         // 寫操作需認證
         .requestMatchers(HttpMethod.POST, "/api/comments/**").authenticated()

@@ -69,3 +69,9 @@ cors:
 oauth2:
   frontend-success-url: ${OAUTH2_FRONTEND_SUCCESS_URL:https://solo-react-frontend.vercel.app/login}
   frontend-failure-url: ${OAUTH2_FRONTEND_FAILURE_URL:https://solo-react-frontend.vercel.app/login}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

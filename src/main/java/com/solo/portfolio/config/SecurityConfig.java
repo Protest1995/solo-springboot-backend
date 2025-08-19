@@ -38,14 +38,20 @@ public class SecurityConfig {
       .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
       .and()
       .authorizeHttpRequests(authz -> authz
+        // 預檢
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        // Swagger
         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
+        // OAuth2
         .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
+        // 公開 GET（統一 /api 前綴）
         .requestMatchers(HttpMethod.GET, "/api/posts/**", "/api/portfolio/**", "/api/comments/post/**").permitAll()
         .requestMatchers("/auth/**").permitAll()
+        // 寫操作需認證
         .requestMatchers(HttpMethod.POST, "/api/comments/**").authenticated()
         .requestMatchers(HttpMethod.PUT, "/api/comments/**").authenticated()
         .requestMatchers(HttpMethod.DELETE, "/api/comments/**").authenticated()
+        // 其他都需認證
         .anyRequest().authenticated()
       )
       .oauth2Login(oauth2 -> oauth2
@@ -74,6 +80,7 @@ public class SecurityConfig {
     configuration.setAllowedHeaders(Arrays.asList("Content-Type","Authorization","Accept","Origin","X-Requested-With"));
     configuration.setExposedHeaders(Arrays.asList("Location","Link"));
     configuration.setAllowCredentials(false);
+
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;

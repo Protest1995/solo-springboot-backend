@@ -37,28 +37,33 @@ public class SecurityConfig {
       .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
       .and()
       .authorizeHttpRequests(authz -> authz
-        // 放行預檢請求，避免 CORS 在 Security 層被擋
+        // 1) 放行預檢，避免在 Security 層攔下 CORS
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-        // 公開端點（依你的實際路由調整）
+        // 2) 公開讀取端點（依你的實際後端路由調整）
         .requestMatchers("/auth/**").permitAll()
-        .requestMatchers("/content/**").permitAll()
-        .requestMatchers("/comments/post/**").permitAll()
-        // 若你的前端會讀取 /api/posts、/api/portfolio，放行 GET
-        .requestMatchers(HttpMethod.GET, "/api/posts/**", "/api/portfolio/**").permitAll()
+        
+        .requestMatchers(HttpMethod.GET, "/posts/**", "/portfolio/**").permitAll()
+        // 若你的留言查詢路徑是 /api/comments/post/{id}，請改成下一行：
+        //.requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/comments/post/**").permitAll()
 
-        // Swagger
+        // 3) Swagger
         .requestMatchers(
           "/v3/api-docs/**",
           "/swagger-ui.html",
           "/swagger-ui/**"
         ).permitAll()
 
-        // OAuth2
+        // 4) OAuth2
         .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
 
-        // 其他需要認證
-        .requestMatchers("/comments/**").authenticated()
+        // 5) 寫操作與其他需認證的端點
+        .requestMatchers(HttpMethod.POST, "/comments/**").authenticated()
+        .requestMatchers(HttpMethod.PUT, "/comments/**").authenticated()
+        .requestMatchers(HttpMethod.DELETE, "/comments/**").authenticated()
+
+        // 覆蓋不到的其它端點，預設需認證
         .anyRequest().authenticated()
       )
       .oauth2Login(oauth2 -> oauth2
@@ -79,17 +84,27 @@ public class SecurityConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
 
-    // 加入本機與正式網域
+    // 若你想同時支援固定網域與未來的預覽域名，建議用 AllowedOriginPatterns。
+    // 這裡保留明確白名單，避免 credentials 啟用時踩規則限制。
     List<String> allowedOrigins = Arrays.asList(
-      "https://solo-react-frontend.vercel.app", // Production
-      "http://localhost:5173"                    // 本機開發（Vite）      
+      "https://solo-react-frontend.vercel.app",
+      "http://localhost:5173",
+      "https://solo-react-frontend.vercel.app",
+      // 如需 Vercel 預覽，可加：
+      // "https://*.vercel.app"
     );
+    // 二選一：建議優先用 setAllowedOrigins（更嚴格）
     configuration.setAllowedOrigins(allowedOrigins);
+    // 若你確定需要萬用預覽域，才改用 Patterns（並請保持 allowCredentials=false）：
+    // configuration.setAllowedOriginPatterns(Arrays.asList("https://solo-react-frontend.vercel.app", "http://localhost:5173", "https://*.vercel.app"));
 
     configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("Content-Type","Authorization","Accept","Origin","X-Requested-With"));
 
-    // 若前端沒有要帶 cookie/session，建議先關閉（降低 CORS 難度）
+    // 若前端要讀自訂回應標頭（可選）
+    configuration.setExposedHeaders(Arrays.asList("Location","Link"));
+
+    // 與前端對齊：不帶 cookies/credentials，降低 CORS 複雜度
     configuration.setAllowCredentials(false);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

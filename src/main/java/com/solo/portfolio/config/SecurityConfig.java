@@ -89,7 +89,7 @@ public class SecurityConfig {
     List<String> allowedOrigins = Arrays.asList(
       "https://solo-react-frontend.vercel.app",
       "http://localhost:5173",
-      "https://solo-react-frontend.vercel.app"
+      "https://solo-springboot-backend-production.up.railway.app"
       // 如需 Vercel 預覽，可加：
       // "https://*.vercel.app"
     );

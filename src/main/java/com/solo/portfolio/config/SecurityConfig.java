@@ -43,7 +43,7 @@ public class SecurityConfig {
         // 2) 公開讀取端點（依你的實際後端路由調整）
         .requestMatchers("/auth/**").permitAll()
         
-        .requestMatchers(HttpMethod.GET, "/api/posts/**", "/api/portfolio/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/posts/**", "/portfolio/**").permitAll()
         // 若你的留言查詢路徑是 /api/comments/post/{id}，請改成下一行：
         //.requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
         .requestMatchers(HttpMethod.GET, "/comments/post/**").permitAll()

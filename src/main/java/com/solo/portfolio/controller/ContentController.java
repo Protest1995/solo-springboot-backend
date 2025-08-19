@@ -20,7 +20,7 @@ import java.util.List;
  * 處理作品集和部落格文章的CRUD操作
  */
 @RestController
-@RequestMapping("")
+@RequestMapping("api")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @Tag(name = "內容", description = "作品集和部落格內容管理")

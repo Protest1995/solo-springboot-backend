@@ -38,25 +38,14 @@ public class SecurityConfig {
       .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
       .and()
       .authorizeHttpRequests(authz -> authz
-        // 1) 預檢
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-        // 2) Swagger（務必放行）
         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-
-        // 3) OAuth2
         .requestMatchers("/login/oauth2/**", "/oauth2/**").permitAll()
-
-        // 4) 公開 GET 端點 —— 統一含 /api 前綴（依你的實際路由調整）
         .requestMatchers(HttpMethod.GET, "/api/posts/**", "/api/portfolio/**", "/api/comments/post/**").permitAll()
         .requestMatchers("/auth/**").permitAll()
-
-        // 5) 寫操作需認證
         .requestMatchers(HttpMethod.POST, "/api/comments/**").authenticated()
         .requestMatchers(HttpMethod.PUT, "/api/comments/**").authenticated()
         .requestMatchers(HttpMethod.DELETE, "/api/comments/**").authenticated()
-
-        // 其他預設需認證
         .anyRequest().authenticated()
       )
       .oauth2Login(oauth2 -> oauth2
@@ -76,7 +65,6 @@ public class SecurityConfig {
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-
     configuration.setAllowedOrigins(List.of(
       "https://solo-react-frontend.vercel.app",
       "http://localhost:5173",
@@ -85,14 +73,12 @@ public class SecurityConfig {
     configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
     configuration.setAllowedHeaders(Arrays.asList("Content-Type","Authorization","Accept","Origin","X-Requested-With"));
     configuration.setExposedHeaders(Arrays.asList("Location","Link"));
-    configuration.setAllowCredentials(false); // 與前端對齊，無 cookie
-
+    configuration.setAllowCredentials(false);
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
   }
 
-  // 讓 Spring 依據代理標頭正確推斷外部 URL scheme/host（修正 Swagger 生成 http 的問題）
   @Bean
   public ForwardedHeaderFilter forwardedHeaderFilter() {
     return new ForwardedHeaderFilter();

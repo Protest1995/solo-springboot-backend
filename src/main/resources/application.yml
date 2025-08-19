@@ -54,7 +54,8 @@ server:
   mvc:
     locale: zh_TW
     locale-resolver: accept-header
-
+  forward-headers-strategy: framework
+  
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
@@ -75,3 +76,4 @@ springdoc:
     enabled: true
   swagger-ui:
     enabled: true
+

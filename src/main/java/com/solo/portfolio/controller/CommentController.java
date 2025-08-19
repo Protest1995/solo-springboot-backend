@@ -20,7 +20,7 @@ import java.util.List;
  * 包含查看、新增和刪除評論的功能
  */
 @RestController
-@RequestMapping("/comments")
+@RequestMapping("/api/comments")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 @Tag(name = "評論", description = "部落格文章評論管理")

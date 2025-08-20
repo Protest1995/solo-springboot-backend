@@ -69,18 +69,34 @@ public class OAuth2AuthenticationSuccessHandler implements org.springframework.s
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-
-        // 獲取使用者電子郵件
         String email = String.valueOf(oAuth2User.getAttributes().getOrDefault("email", ""));
-        // 獲取OAuth2提供者的唯一識別碼
         String sub = String.valueOf(oAuth2User.getAttributes().getOrDefault("sub", "oauthUser"));
-        // 設定偏好的使用者名稱
+        String registrationId = String.valueOf(oAuth2User.getAttributes().getOrDefault("iss", ""));
+        String login = String.valueOf(oAuth2User.getAttributes().getOrDefault("login", ""));
+        String provider = "";
+        if (oAuth2User.getAttributes().containsKey("iss") && oAuth2User.getAttributes().get("iss") != null) {
+            String iss = oAuth2User.getAttributes().get("iss").toString();
+            if (iss.contains("github")) provider = "github";
+            else if (iss.contains("google")) provider = "google";
+            else if (iss.contains("facebook")) provider = "facebook";
+        }
+        // fallback: try to detect github by login field
+        if (provider.isEmpty() && oAuth2User.getAttributes().containsKey("login")) provider = "github";
+
         String preferredUsername = !email.isEmpty() ? email : sub;
+        if (provider.equals("github")) {
+            // github: login is username, email may be null
+            if ((login != null && !login.equals("null") && !login.isEmpty())) {
+                preferredUsername = login;
+                if (email == null || email.isEmpty() || email.equals("null")) {
+                    email = login + "@github.oauth";
+                }
+            }
+        }
 
         // 檢查使用者是否已存在
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) {
-            // 從電子郵件或sub生成基本使用者名稱
+        if (user == null && preferredUsername != null && !preferredUsername.equals("null") && !preferredUsername.isEmpty() && email != null && !email.equals("null") && !email.isEmpty()) {
             String baseUsername = preferredUsername.contains("@") ? preferredUsername.substring(0, preferredUsername.indexOf('@')) : preferredUsername;
             String candidate = baseUsername;
             int suffix = 1;
@@ -90,7 +106,7 @@ public class OAuth2AuthenticationSuccessHandler implements org.springframework.s
             }
             user = new User();
             user.setUsername(candidate);
-            user.setEmail(!email.isEmpty() ? email : (sub + "@google.oauth"));
+            user.setEmail(email);
             user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
             user.setRole(UserRole.USER);
             Object picture = oAuth2User.getAttributes().get("picture");

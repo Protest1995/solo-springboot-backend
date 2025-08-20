@@ -28,48 +28,50 @@ import java.util.UUID;
 @Slf4j
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-    /**
-     * 使用者資料存儲庫
-     */
     private final UserRepository userRepository;
-
-    /**
-     * 密碼加密工具
-     */
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * 載入OAuth2使用者資訊
-     * 處理第三方登入的使用者資料，並確保使用者在系統中存在
-     *
-     * @param userRequest OAuth2使用者請求資訊
-     * @return OAuth2User 處理後的使用者資訊
-     * @throws OAuth2AuthenticationException 當認證過程發生錯誤時
-     */
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         DefaultOAuth2UserService delegate = new DefaultOAuth2UserService();
         OAuth2User oAuth2User = delegate.loadUser(userRequest);
 
-        // 獲取使用者屬性和提供者資訊
         Map<String, Object> attributes = oAuth2User.getAttributes();
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
 
-        // 提取基本資訊
         String email = getAttribute(attributes, "email");
         String name = getAttribute(attributes, "name");
-        String picture = getAttribute(attributes, "picture");
+        String picture = null;
+        String username = null;
 
-        log.info("OAuth2登入來源 {}: 電子郵件={}, 姓名={}", registrationId, email, name);
-
-        if (email == null || email.isBlank()) {
-            // 處理未提供電子郵件的特殊情況
-            String sub = getAttribute(attributes, "sub");
-            email = sub + "@" + registrationId + ".oauth";
+        if ("google".equals(registrationId)) {
+            picture = getAttribute(attributes, "picture");
+        } else if ("facebook".equals(registrationId)) {
+            if (attributes.containsKey("picture")) {
+                Map<String, Object> pictureObj = (Map<String, Object>) attributes.get("picture");
+                if (pictureObj.containsKey("data")) {
+                    Map<String, Object> dataObj = (Map<String, Object>) pictureObj.get("data");
+                    if (dataObj.containsKey("url")) {
+                        picture = (String) dataObj.get("url");
+                    }
+                }
+            }
+        } else if ("github".equals(registrationId)) {
+            // GitHub: login is username, name is display name, email may be null
+            username = getAttribute(attributes, "login");
+            if (email == null || email.isBlank()) {
+                // Try to get primary email from emails attribute if available (Spring may not fetch it by default)
+                // Fallback: use login@github.oauth
+                email = (username != null ? username : "githubUser") + "@github.oauth";
+            }
+            if (name == null || name.isBlank()) {
+                name = username;
+            }
         }
 
-        // 確保使用者存在或創建新帳號
-        ensureUserExists(email, name, picture);
+        log.info("OAuth2登入來源 {}: 電子郵件={}, 姓名={}, 用戶名={}", registrationId, email, name, username);
+
+        ensureUserExists(email, name, picture != null ? picture : null);
         log.info("OAuth2 ensureUserExists finished for email={}.", email);
 
         return new DefaultOAuth2User(
@@ -83,7 +85,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         Optional<User> existingByEmail = userRepository.findByEmail(email);
         if (existingByEmail.isPresent()) return;
 
-        // 產生唯一 username（以 email local-part 為基底）
         String baseUsername = email.contains("@") ? email.substring(0, email.indexOf('@')) : email;
         String candidate = baseUsername;
         int suffix = 1;

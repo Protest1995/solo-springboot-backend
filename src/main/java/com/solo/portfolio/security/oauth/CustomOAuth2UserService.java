@@ -59,6 +59,8 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         } else if ("github".equals(registrationId)) {
             // GitHub: login is username, name is display name, email may be null
             username = getAttribute(attributes, "login");
+            // 新增：抓取 GitHub 頭像
+            picture = getAttribute(attributes, "avatar_url");
             if (email == null || email.isBlank()) {
                 // Try to get primary email from emails attribute if available (Spring may not fetch it by default)
                 // Fallback: use login@github.oauth

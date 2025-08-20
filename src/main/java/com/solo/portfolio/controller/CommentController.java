@@ -22,7 +22,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 @Tag(name = "評論", description = "部落格文章評論管理")
 public class CommentController {
     /**

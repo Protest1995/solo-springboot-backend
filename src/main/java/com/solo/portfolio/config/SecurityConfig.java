@@ -37,6 +37,18 @@ public class SecurityConfig {
       .csrf().disable()
       .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
       .and()
+      .exceptionHandling()
+        .authenticationEntryPoint((request, response, authException) -> {
+          response.setStatus(401);
+          response.setContentType("application/json");
+          response.getWriter().write("{\"error\": \"Unauthorized\"}");
+        })
+        .accessDeniedHandler((request, response, accessDeniedException) -> {
+          response.setStatus(403);
+          response.setContentType("application/json");
+          response.getWriter().write("{\"error\": \"Forbidden\"}");
+        })
+      .and()
       .authorizeHttpRequests(authz -> authz
         // 預檢
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

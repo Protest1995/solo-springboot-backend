@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import com.solo.portfolio.security.JwtAuthenticationFilter;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -17,6 +18,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.ForwardedHeaderFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,15 +31,15 @@ public class SecurityConfig {
   private final CustomOAuth2UserService customOAuth2UserService;
   private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
   private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+  private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     http
-      .cors().and()
-      .csrf().disable()
-      .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-      .and()
-      .exceptionHandling()
+      .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+      .csrf(csrf -> csrf.disable())
+      .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+      .exceptionHandling(exceptionHandling -> exceptionHandling
         .authenticationEntryPoint((request, response, authException) -> {
           response.setStatus(401);
           response.setContentType("application/json");
@@ -47,8 +49,8 @@ public class SecurityConfig {
           response.setStatus(403);
           response.setContentType("application/json");
           response.getWriter().write("{\"error\": \"Forbidden\"}");
-        })
-      .and()
+        }))
+      .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
       .authorizeHttpRequests(authz -> authz
         // 預檢
         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -59,7 +61,7 @@ public class SecurityConfig {
         // 公開 GET（統一 /api 前綴，精確與萬用各一條，放前面確保命中）
         .requestMatchers("/api/posts", "/api/posts/**").permitAll()
         .requestMatchers("/api/portfolio", "/api/portfolio/**").permitAll()
-        .requestMatchers("/api/comments/post", "/api/comments/post/**").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/comments/**").permitAll()
         // 其他公開端點
         .requestMatchers("/auth/**").permitAll()
         // 寫操作需認證
@@ -89,12 +91,20 @@ public class SecurityConfig {
     configuration.setAllowedOrigins(List.of(
       "https://solo-react-frontend.vercel.app",
       "http://localhost:5173",
+      "http://localhost:8080",
       "https://solo-springboot-backend-production.up.railway.app"
     ));
     configuration.setAllowedMethods(Arrays.asList("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-    configuration.setAllowedHeaders(Arrays.asList("Content-Type","Authorization","Accept","Origin","X-Requested-With"));
+    configuration.setAllowedHeaders(Arrays.asList(
+      "Content-Type",
+      "Authorization",
+      "Accept",
+      "Origin",
+      "X-Requested-With",
+      "refresh-token"
+    ));
     configuration.setExposedHeaders(Arrays.asList("Location","Link"));
-    configuration.setAllowCredentials(false);
+    configuration.setAllowCredentials(true);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

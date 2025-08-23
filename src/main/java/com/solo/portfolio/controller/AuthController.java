@@ -101,15 +101,20 @@ public class AuthController {
     @Operation(summary = "Logout", description = "Invalidate the provided refresh token (if any)")
     public ResponseEntity<AuthResponse> logout(HttpServletRequest request) {
         try {
-            String refreshToken = request.getHeader("Refresh-Token");
-            if (refreshToken != null) {
-                authService.logout(refreshToken);
+            String refreshToken = request.getHeader("refresh-token");  // 改為小寫
+            // 即使沒有 refresh token 也允許登出
+            if (refreshToken != null && !refreshToken.isEmpty()) {
+                try {
+                    authService.logout(refreshToken);
+                } catch (Exception e) {
+                    log.warn("Error invalidating refresh token during logout", e);
+                }
             }
             return ResponseEntity.ok(new AuthResponse(true, "登出成功", null, null, null));
         } catch (Exception e) {
             log.error("Logout failed", e);
-            return ResponseEntity.badRequest()
-                    .body(new AuthResponse(false, e.getMessage(), null, null, null));
+            // 即使發生錯誤，也返回 200 OK
+            return ResponseEntity.ok(new AuthResponse(true, "登出成功", null, null, null));
         }
     }
     

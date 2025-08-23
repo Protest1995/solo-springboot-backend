@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +20,7 @@ import java.util.List;
  * 處理部落格文章評論的相關請求
  * 包含查看、新增和刪除評論的功能
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/comments")
 @RequiredArgsConstructor
@@ -65,10 +67,19 @@ public class CommentController {
         // 從JWT權杖中提取使用者名稱
         if (authorization != null && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7);
-            try { username = authService.getUsernameFromAccessToken(token); } catch (Exception ignored) {}
+            try {
+                username = authService.getUsernameFromAccessToken(token);
+            } catch (Exception e) {
+                log.error("Token validation failed", e);
+                return ResponseEntity.status(401).build();
+            }
+        } else {
+            log.warn("No Authorization header or invalid format");
+            return ResponseEntity.status(401).build();
         }
         // 驗證失敗時返回401未授權狀態
         if (username == null || username.isBlank()) {
+            log.warn("Username is null or blank after token validation");
             return ResponseEntity.status(401).build();
         }
         return ResponseEntity.ok(commentService.addComment(username, req));

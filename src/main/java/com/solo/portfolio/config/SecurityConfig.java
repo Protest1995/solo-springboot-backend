@@ -98,6 +98,7 @@ public class SecurityConfig {
     configuration.setAllowedHeaders(Arrays.asList(
       "Content-Type",
       "Authorization",
+      "refresh-token",
       "Accept",
       "Origin",
       "X-Requested-With",

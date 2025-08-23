@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
@@ -15,7 +16,8 @@ import java.time.LocalDateTime;
 @Table(name = "portfolio_items", schema = "public")
 @Data
 @NoArgsConstructor
-public class PortfolioItem {
+public class PortfolioItem implements Serializable {
+    private static final long serialVersionUID = 1L;
     /**
      * 作品唯一識別碼
      */

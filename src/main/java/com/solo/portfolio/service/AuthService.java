@@ -5,6 +5,7 @@ import com.solo.portfolio.model.dto.AuthResponse;
 import com.solo.portfolio.model.dto.RegisterRequest;
 import com.solo.portfolio.model.dto.UserDto;
 import com.solo.portfolio.model.dto.UpdateUserRequest;
+import com.solo.portfolio.service.cache.UserCacheService;
 import com.solo.portfolio.model.entity.RefreshToken;
 import com.solo.portfolio.model.entity.User;
 import com.solo.portfolio.model.entity.UserRole;
@@ -67,6 +68,12 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     /**
+     * 用戶快取服務
+     * 管理用戶資料的快取
+     */
+    private final UserCacheService userCacheService;
+
+    /**
      * 處理使用者登入請求
      * 驗證使用者憑證並生成JWT權杖
      * 
@@ -90,8 +97,7 @@ public class AuthService {
             saveRefreshToken(request.getUsername(), refreshToken);
 
             // 取得用戶資訊
-            User user = userRepository.findByUsername(request.getUsername())
-                    .orElseThrow(() -> new RuntimeException("用戶不存在"));
+            User user = findUserByUsername(request.getUsername());
 
             return new AuthResponse(
                 true,
@@ -126,8 +132,13 @@ public class AuthService {
     }
 
     public User findUserByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("用戶不存在"));
+        return userCacheService.get(username)
+                .orElseGet(() -> {
+                    User user = userRepository.findByUsername(username)
+                            .orElseThrow(() -> new RuntimeException("用戶不存在"));
+                    userCacheService.put(user);
+                    return user;
+                });
     }
 
     public UserDto toDto(User user) {
@@ -163,6 +174,7 @@ public class AuthService {
         user.setAvatarUrl("/images/profile.jpg"); // 默認頭像
         
         User savedUser = userRepository.save(user);
+        userCacheService.put(savedUser);
         
         // 生成令牌（直接使用使用者名稱，避免 UserDetails 轉型問題）
         String accessToken = jwtTokenProvider.generateAccessToken(savedUser.getUsername());
@@ -236,9 +248,15 @@ public class AuthService {
     @Transactional
     public void logout(String refreshToken) {
         try {
-            // 刪除刷新令牌
+            // 刪除刷新令牌，並獲取用戶ID
             refreshTokenRepository.findByToken(refreshToken)
-                    .ifPresent(refreshTokenRepository::delete);
+                    .ifPresent(token -> {
+                        // 根據用戶ID找到用戶並刪除快取
+                        userRepository.findById(token.getUserId())
+                                .ifPresent(user -> userCacheService.delete(user.getUsername()));
+                        // 刪除令牌
+                        refreshTokenRepository.delete(token);
+                    });
         } catch (Exception e) {
             log.error("Logout failed", e);
         }
@@ -287,8 +305,7 @@ public class AuthService {
      */
     @Transactional
     public UserDto updateCurrentUser(String usernameFromToken, UpdateUserRequest req) {
-        User user = userRepository.findByUsername(usernameFromToken)
-                .orElseThrow(() -> new RuntimeException("用戶不存在"));
+        User user = findUserByUsername(usernameFromToken);
 
         if (req.getUsername() != null && !req.getUsername().isBlank() && !req.getUsername().equals(user.getUsername())) {
             if (userRepository.existsByUsername(req.getUsername())) {
@@ -330,7 +347,13 @@ public class AuthService {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
         }
 
-        userRepository.save(user);
-        return convertToDto(user);
+        // 先刪除舊的快取
+        if (!usernameFromToken.equals(user.getUsername())) {
+            userCacheService.delete(usernameFromToken);
+        }
+
+        User savedUser = userRepository.save(user);
+        userCacheService.put(savedUser);
+        return convertToDto(savedUser);
     }
 } 

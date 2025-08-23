@@ -1,4 +1,22 @@
 spring:
+  # Redis配置
+  data:
+    redis:
+      host: ${REDISHOST:localhost}
+      port: ${REDISPORT:6379}
+      password: ${REDISPASSWORD:}
+      username: ${REDISUSER:default}
+      database: 0
+      timeout: 60000
+      connect-timeout: 30000
+      client-type: lettuce
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
+      
   datasource:
     url: ${POSTGRES_URL}
     username: ${POSTGRES_USER}
